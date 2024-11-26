@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poll Responder</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f0f4f8; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 50px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1, h2 { color: #333; }
+        label { font-weight: bold; }
+        input[type="radio"], textarea { margin: 5px 0 10px 0; }
+        button { background-color: #007BFF; color: white; border: none; padding: 10px 20px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer; border-radius: 4px; }
+        button:hover { background-color: #0056b3; }
+        .announcement-bar { background-color: #ffcc00; padding: 10px; text-align: center; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div id="announcementBar" class="announcement-bar" style="display: none;"></div>
+    <div class="container">
+        <h1>Poll Responder</h1>
+        <div id="pollContainer" style="display: none;">
+            <h2>Respond to Poll</h2>
+            <form id="respondForm">
+                <label id="pollQuestion"></label><br>
+                <div id="optionsContainer"></div><br>
+                <button type="submit">Submit Response</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPoll();
+            loadAnnouncement();
+
+            setInterval(checkForUpdates, 2000); // Check for updates every 2 seconds
+        });
+
+        function loadPoll() {
+            let poll = JSON.parse(localStorage.getItem('currentPoll'));
+            let hasResponded = localStorage.getItem('hasResponded');
+
+            if (poll) {
+                if (document.getElementById('pollQuestion').innerText !== poll.question) {
+                    showPoll(poll, hasResponded);
+                }
+            } else {
+                document.getElementById('pollContainer').style.display = 'none';
+            }
+        }
+
+        function loadAnnouncement() {
+            let announcement = localStorage.getItem('announcement');
+            if (announcement) {
+                updateAnnouncementBar(announcement);
+            }
+        }
+
+        function showPoll(poll, hasResponded) {
+            document.getElementById('pollQuestion').innerText = poll.question;
+            const optionsContainer = document.getElementById('optionsContainer');
+            optionsContainer.innerHTML = '';
+            poll.options.forEach(option => {
+                let div = document.createElement('div');
+                let input = document.createElement('input');
+                input.type = 'radio';
+                input.name = 'option';
+                input.value = option;
+                input.disabled = hasResponded === String(poll.id) ? true : false;
+                let label = document.createElement('label');
+                label.appendChild(document.createTextNode(option));
+                div.appendChild(input);
+                div.appendChild(label);
+                optionsContainer.appendChild(div);
+            });
+            document.getElementById('pollContainer').style.display = 'block';
+
+            document.getElementById('respondForm').onsubmit = function(e) {
+                e.preventDefault();
+                let response = document.querySelector('input[name="option"]:checked').value;
+                poll.responses.push(response);
+                localStorage.setItem('currentPoll', JSON.stringify(poll));
+                localStorage.setItem('hasResponded', poll.id);
+                alert('Response Submitted!');
+                disablePollOptions();
+            };
+
+            if (hasResponded === String(poll.id)) {
+                disablePollOptions();
+            }
+        }
+
+        function disablePollOptions() {
+            let options = document.querySelectorAll('input[name="option"]');
+            options.forEach(option => {
+                option.disabled = true;
+            });
+            document.querySelector('button[type="submit"]').disabled = true;
+        }
+
+        function updateAnnouncementBar(announcement) {
+            let announcementBar = document.getElementById('announcementBar');
+            announcementBar.innerText = announcement;
+            announcementBar.style.display = 'block';
+        }
+
+        function checkForUpdates() {
+            loadPoll();
+            loadAnnouncement();
+        }
+    </script>
+</body>
+</html>
